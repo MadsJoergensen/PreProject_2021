@@ -26,7 +26,7 @@ n = pypsa.Network("elec_s_37_lv1.0__Co2L0.05-solar+p3-dist10_2030.nc")
 
 # In[2]:
 
-
+plt.plot()
 
 x  = 10    
 
