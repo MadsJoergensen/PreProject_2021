@@ -83,135 +83,42 @@ for co2_limit in co2_limits:
 df["technology"] = df.index
 
 
-#%% Plots for stacked bar plot from DataFrame
+#%%  Making a double for-loop
 
 #Specify the path where to store the plots
 path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
+
+flex= 'elec_s_37'  
+lv = 'lv1.0'
+co2_limit = 'Co2L0.1'
+solar = 'solar+p3'
+dist = '2'
+co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
+lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
+
+
+df_g = pd.DataFrame()       #DataFrame for generator capacity
+df_s = pd.DataFrame()       #DataFrame for storage capacity
+
+for lv in lvl:
+    for co2_limit in co2_limits:
+        network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'-'+'dist'+dist+'_'+'2030'+'.nc')
+        print(network_name)
+        n = pypsa.Network(network_name) 
+        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
+        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
+        df_g[lv+co2_limit] = generators
+        df_s[lv+co2_limit] = storage
+
+
+
+#Filtering values for the generators, with the transmission expansion
+df1 = df_g.filter(like='1.0')
+df2 = df_g.filter(like='1.1')
+df3 = df_g.filter(like='2.0')
 
 plt.figure(1)
-plt.figure(figsize=(12, 5))
-ax = df.plot.bar(rot=35, figsize=(12, 5) )
-ax.set_xlabel('Carrier')
-ax.set_ylabel('Installed capacity [MW]')
-ax.set_title('Carrier capacity vs. CO2 emmisions')
-ax.yaxis.grid()
-plt.rc('grid', linestyle="--", color='gray')
-ax.legend(frameon = True, ncol = 5, shadow=True, bbox_to_anchor=(0.5, 1.25), loc='upper center', title = '% CO2 emmesion compared to 1990')
-
-name = '\Carrier_test1'
-plt.savefig(path+name, dpi=300, bbox_inches='tight')
-
-#%% Making multible plots allong side
-
-plt.figure(figsize=(12, 5))
-gs1 = gridspec.GridSpec(1, 3)
-gs1.update(wspace=0.05)
-
-
-ax1 = plt.subplot(gs1[0,0:2])
-ax1.set_xlim(0,8760)
-ax1.set_xlabel('1 year (hours)')
-ax1.set_ylabel('GWh')
-ax1.plot(df.plot.bar(rot=35))
-
-ax2 = plt.subplot(gs1[0,2])
-
-ax2.set_xlabel('1 week (hours)')
-
-
-#%% Saving plots in a subplot
-
-#Specify the path where to store the plots
-path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
-
-
-# Some example data to display
-x = np.linspace(0, 2 * np.pi, 400)
-y = np.sin(x ** 2)
-
-flex= 'elec_s_37'  
-lv = 'lv1.0'
-co2_limit = 'Co2L0.1'
-solar = 'solar+p3-dist'
-co2_limits=['0.5', '0.2', '0.1', '0.05',  '0'] # the corresponding CO2 limits in the code
-lvl = ['1.0', '2.0']
-
-
-df1 = pd.DataFrame()
-df2 = pd.DataFrame()
-
-for co2_limit in co2_limits:      
-        network_name= (flex+ '_' + lv + '__' +'Co2L'+co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')        
-        print(network_name)
-        n = pypsa.Network(network_name) 
-        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
-        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
-        print(generators)
-        print(storage)
-        df1[co2_limit] = generators
-        df2[co2_limit] = storage
-
-df1["technology"] = df1.index
-df2["technology"] = df2.index
-
-
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-fig.suptitle('Horizontally stacked subplots')
-df1.plot.bar(ax=ax1,rot=35, figsize=(12, 5) )
-ax1.set_xlabel('Carrier')
-ax1.set_ylabel('Installed capacity [MW]')
-#ax1.set_title('Carrier capacity vs. CO2 emmisions')
-ax1.yaxis.grid()
-plt.rc('grid', linestyle="--", color='gray')
-ax1.legend(frameon = True, ncol = 5, shadow=True, bbox_to_anchor=(0.5, 1.25), loc='upper center', title = '% CO2 emmesion compared to 1990')
-
-df2.plot.bar(ax=ax2,rot=35, figsize=(12, 5) )
-ax2.set_xlabel('Carrier')
-ax2.set_ylabel('Installed capacity [MW]')
-ax2.set_title('Carrier capacity vs. CO2 emmisions')
-ax2.yaxis.grid()
-
-ax3.plot(x,y)
-
-plt.title('Title for whole plot')
-
-name = '\Carrier_test_3'
-plt.savefig(path+name, dpi=300, bbox_inches='tight')
-
-#%%  Making a double for-loop
-
-#Specify the path where to store the plots
-path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
-
-
-flex= 'elec_s_37'  
-lv = 'lv1.0'
-co2_limit = 'Co2L0.1'
-solar = 'solar+p3-dist'
-co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
-lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
-
-
-df = pd.DataFrame()
-
-for lv in lvl:
-    for co2_limit in co2_limits:
-        network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')
-        print(network_name)
-        n = pypsa.Network(network_name) 
-        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
-        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
-        df[lv+co2_limit] = generators
-
-
-#df.plot.bar(df.filter(regex='1.0'))
-
-df1 = df.filter(like='1.0')
-df2 = df.filter(like='1.1')
-df3 = df.filter(like='2.0')
-
-plt.figure(1,figsize=(10,5))
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3,dpi = 200,sharey=True)
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3,figsize=(18,8),dpi = 200,sharey=True)
 fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion')
 df1.plot.bar(ax=ax1,rot=25 )
 ax1.set_xlabel('Carrier')
@@ -239,188 +146,50 @@ ax3.set_ylim(0,700e3)
 ax3.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 ax3.yaxis.grid()
 
-
 # Save the figure in the selected path
-name = r'\01_double_test1'
+name = r'\01_generator'
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
-plt.savefig(path+name, dpi=300, bbox_inches='tight')   
+plt.savefig(path+name, dpi=300, bbox_inches='tight') 
 
+#Filtering values for the storage capacity, with the transmission expansion
 
-
-df.head()
-
-df.iloc["1.0"]
+df4 = df_s.filter(like='1.0')
+df5 = df_s.filter(like='1.1')
+df6 = df_s.filter(like='2.0')
 
 plt.figure(2)
-plt.figure(figsize=(20, 10))
-ax = df.plot.bar(x = '2.0',rot=35, figsize=(12, 5) )
-ax.set_xlabel('Carrier')
-ax.set_ylabel('Installed capacity [MW]')
-ax.set_title('Carrier capacity vs. CO2 emmisions')
-ax.yaxis.grid()
-plt.rc('grid', linestyle="--", color='gray')
-ax.legend(frameon = True, ncol = 5, shadow=True, bbox_to_anchor=(0.5, 1.25), loc='upper center', title = '% CO2 emmesion compared to 1990')
-
-name = '\double_test1'
-plt.savefig(path+name, dpi=300, bbox_inches='tight')
-        
-
-
-
-print(generators)
-
-storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
-
-print(storage)
-
-labels = ['gas',
-          'offwind-ac',
-          'offwind-dc',
-          'onwind',
-          'ror',
-          'solar', 
-          'solar rooftop']
-sizes = [generators['gas'].sum(),
-         generators['offwind-ac'].sum(),
-         generators['offwind-dc'].sum(),
-         generators['onwind'].sum(),
-         generators['ror'].sum(),
-         generators['solar'].sum(),
-         generators['solar rooftop'].sum()]
-
-colors=['brown','blue','dodgerblue','green','yellow','orange','red']
-
-plt.pie(sizes, 
-        colors=colors, 
-        labels=labels, 
-        wedgeprops={'linewidth':0})
-plt.axis('equal')
-
-plt.title('Electricity mix', y=1.07)
-
-# Loading the network in a proper way
-
-
-flex= 'elec_s_37'  
-lv = 'lv1.0'
-co2_limit = 'Co2L0.1'
-solar = 'solar+p3-dist'
-
-    
-network_name = (flex + '_' + lv + '__' + co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')
-
-network = pypsa.Network(network_name)         
-
-co2_limits=['0.5', '0.2', '0.1', '0.05',  '0'] #, '0.025']
-
-for co2_limit in co2_limits:      
-        network_name= (flex+ '_' + lv + '__' +'Co2L'+co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')        
-        print(network_name)
-        n = pypsa.Network(network_name) 
-        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
-        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
-        print(generators)
-        print(storage)
-        plt.figure()
-        labels = ['gas',
-                  'offwind-ac',
-                  'offwind-dc',
-                  'onwind',
-                  'ror',
-                  'solar', 
-                  'solar rooftop']
-        sizes = [generators['gas'].sum(),
-                 generators['offwind-ac'].sum(),
-                 generators['offwind-dc'].sum(),
-                 generators['onwind'].sum(),
-                 generators['ror'].sum(),
-                 generators['solar'].sum(),
-                 generators['solar rooftop'].sum()]
-
-
-        colors=['brown','blue','dodgerblue','green','yellow','orange','red']
-
-        plt.pie(sizes, 
-                colors=colors, 
-                labels=labels, 
-                wedgeprops={'linewidth':0})
-        plt.axis('equal')
-
-        plt.title('Electricity mix', y=1.07)
-        plt.show()
-        
-    
-#%%  Making a double for-loop
-
-#Specify the path where to store the plots
-path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
-
-
-flex= 'elec_s_37'  
-lv = 'lv1.0'
-co2_limit = 'Co2L0.1'
-solar = 'solar+p3-dist'
-co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
-lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
-
-
-df = pd.DataFrame()
-
-for lv in lvl:
-    for co2_limit in co2_limits:
-        network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')
-        print(network_name)
-        n = pypsa.Network(network_name) 
-        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
-        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
-        df[lv+co2_limit] = generators
-
-
-#df.plot.bar(df.filter(regex='1.0'))
-
-df1 = df.filter(like='1.0')
-df2 = df.filter(like='1.1')
-df3 = df.filter(like='2.0')
-
-plt.figure(1,figsize=(10,5))
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3,dpi = 200,sharey=True)
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3,figsize=(18,8),dpi = 200,sharey=True)
 fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion')
-df1.plot.bar(ax=ax1,rot=25 )
+df4.plot.bar(ax=ax1,rot=25 )
 ax1.set_xlabel('Carrier')
 ax1.set_ylabel('Installed capacity [MW]')
 ax1.set_title('Carrier capacity vs. CO2 emmisions - lv1.0')
-ax1.set_ylim(0,700e3)
+ax1.set_ylim(0,120e3)
 ax1.yaxis.grid()
 ax1.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 #plt.rc('grid', linestyle="--", color='gray')
 #ax1.legend(frameon = True, ncol = 5, shadow=True, bbox_to_anchor=(0.5, 1.25), loc='upper center', title = '% CO2 emmesion compared to 1990')
 
-df2.plot.bar(ax=ax2,rot=25 )
+df5.plot.bar(ax=ax2,rot=25 )
 ax2.set_xlabel('Carrier')
 ax2.set_ylabel('Installed capacity [MW]')
 ax2.set_title('Carrier capacity vs. CO2 emmisions - lv1.1')
-ax2.set_ylim(0,700e3)
+ax2.set_ylim(0,120e3)
 ax2.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 ax2.yaxis.grid()
 
-df3.plot.bar(ax=ax3,rot=25 )
+df6.plot.bar(ax=ax3,rot=25 )
 ax3.set_xlabel('Carrier')
 ax3.set_ylabel('Installed capacity [MW]')
 ax3.set_title('Carrier capacity vs. CO2 emmisions - lv2.0')
-ax3.set_ylim(0,700e3)
+ax3.set_ylim(0,120e3)
 ax3.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 ax3.yaxis.grid()
 
-
-
-
-
 # Save the figure in the selected path
-name = r'\01_double_test1'
+name = r'\01_storage'
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
 plt.savefig(path+name, dpi=300, bbox_inches='tight')   
-
-
 
 # In[3]
 
