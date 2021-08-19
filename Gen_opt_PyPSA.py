@@ -350,6 +350,75 @@ for co2_limit in co2_limits:
         plt.show()
         
     
+#%%  Making a double for-loop
+
+#Specify the path where to store the plots
+path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
+
+
+flex= 'elec_s_37'  
+lv = 'lv1.0'
+co2_limit = 'Co2L0.1'
+solar = 'solar+p3-dist'
+co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
+lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
+
+
+df = pd.DataFrame()
+
+for lv in lvl:
+    for co2_limit in co2_limits:
+        network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'1'+'_'+'2030'+'.nc')
+        print(network_name)
+        n = pypsa.Network(network_name) 
+        generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
+        storage = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
+        df[lv+co2_limit] = generators
+
+
+#df.plot.bar(df.filter(regex='1.0'))
+
+df1 = df.filter(like='1.0')
+df2 = df.filter(like='1.1')
+df3 = df.filter(like='2.0')
+
+plt.figure(1,figsize=(10,5))
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3,dpi = 200,sharey=True)
+fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion')
+df1.plot.bar(ax=ax1,rot=25 )
+ax1.set_xlabel('Carrier')
+ax1.set_ylabel('Installed capacity [MW]')
+ax1.set_title('Carrier capacity vs. CO2 emmisions - lv1.0')
+ax1.set_ylim(0,700e3)
+ax1.yaxis.grid()
+ax1.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
+#plt.rc('grid', linestyle="--", color='gray')
+#ax1.legend(frameon = True, ncol = 5, shadow=True, bbox_to_anchor=(0.5, 1.25), loc='upper center', title = '% CO2 emmesion compared to 1990')
+
+df2.plot.bar(ax=ax2,rot=25 )
+ax2.set_xlabel('Carrier')
+ax2.set_ylabel('Installed capacity [MW]')
+ax2.set_title('Carrier capacity vs. CO2 emmisions - lv1.1')
+ax2.set_ylim(0,700e3)
+ax2.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
+ax2.yaxis.grid()
+
+df3.plot.bar(ax=ax3,rot=25 )
+ax3.set_xlabel('Carrier')
+ax3.set_ylabel('Installed capacity [MW]')
+ax3.set_title('Carrier capacity vs. CO2 emmisions - lv2.0')
+ax3.set_ylim(0,700e3)
+ax3.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
+ax3.yaxis.grid()
+
+
+
+
+
+# Save the figure in the selected path
+name = r'\01_double_test1'
+#plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
+plt.savefig(path+name, dpi=300, bbox_inches='tight')   
 
 
 
