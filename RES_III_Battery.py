@@ -14,6 +14,8 @@ omega_w = 2*math.pi/168         #Frequency for wind time series
 omega_s = 2*math.pi/24          #Frequency for solar time series
 
 
+
+
 # Calculation wind time series
 def G_w(t):     # calculation of eta(p)
     G_w = 4*(1+np.sin(omega_w*t))
