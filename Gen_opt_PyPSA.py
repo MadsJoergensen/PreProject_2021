@@ -35,29 +35,6 @@ capacity = n.generators
 generators_1 = n.generators.groupby("carrier")["p_nom_opt"].sum()
 generators_2 = n.generators.groupby("carrier")["p_nom_opt"].sum()
 
-#%% Buildning plot for comparing data
-
-generators_1 = n.generators.groupby("carrier")["p_nom_opt"].sum()
-generators_2 = n.generators.groupby("carrier")["p_nom_opt"].sum()
-
-
-width = 0.5        #width of the bar plot
-
-gen = generators_1[1:4]
-gen2 = gen*2
-gen3 = gen/2
-
-
-ind = ('onshore wind','hydro','gas')
-
-fig = plt.figure(dpi=200)
-ax = fig.add_axes([0,0,1,1])
-ax.bar(ind, gen, width, color = 'blue', label='hydro')
-ax.bar(ind, gen2, width, bottom = gen, color = 'red', label='hydro 2')
-ax.bar(ind, gen3, width, bottom = gen+gen2, color = 'orange', label='hydro 3')
-ax.legend(frameon = True, shadow=True, bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.show()
-
 #%% Building a stacked plot using pandas
 
 flex= 'elec_s_37'  
@@ -92,7 +69,7 @@ flex= 'elec_s_37'
 lv = 'lv1.0'
 co2_limit = 'Co2L0.1'
 solar = 'solar+p3'
-dist = '2'
+dist = '10'
 co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
 lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
 
@@ -119,7 +96,7 @@ df3 = df_g.filter(like='2.0')
 
 plt.figure(1)
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3,figsize=(18,8),dpi = 200,sharey=True)
-fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion')
+fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion - Dist='+str(dist))
 df1.plot.bar(ax=ax1,rot=25 )
 ax1.set_xlabel('Carrier')
 ax1.set_ylabel('Installed capacity [MW]')
@@ -146,8 +123,10 @@ ax3.set_ylim(0,700e3)
 ax3.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 ax3.yaxis.grid()
 
+str(dist).replace('.', '')
+
 # Save the figure in the selected path
-name = r'\01_generator'
+name = r'\01_generator_dist='+str(dist).replace('.', '')
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
 plt.savefig(path+name, dpi=300, bbox_inches='tight') 
 
@@ -159,7 +138,7 @@ df6 = df_s.filter(like='2.0')
 
 plt.figure(2)
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3,figsize=(18,8),dpi = 200,sharey=True)
-fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion')
+fig.suptitle('Installed capacity vs. CO2 constrain and Transmission expansion - Dist='+str(dist))
 df4.plot.bar(ax=ax1,rot=25 )
 ax1.set_xlabel('Carrier')
 ax1.set_ylabel('Installed capacity [MW]')
@@ -187,16 +166,66 @@ ax3.legend(['CO2 50%','CO2 20%','CO2 10%','CO2 5%', 'CO2 0%'])
 ax3.yaxis.grid()
 
 # Save the figure in the selected path
-name = r'\01_storage'
-#plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
+name = r'\01_storage_dist='+str(dist).replace('.', '') # Assign the name for the figure
 plt.savefig(path+name, dpi=300, bbox_inches='tight')   
 
-# In[3]
+# In[3] Looking at the total system cost 
+
+flex= 'elec_s_37'  
+lv = 'lv1.0'
+co2_limit = 'Co2L0.1'
+solar = 'solar+p3'
+dist = '10'
+co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
+lvl = ['1.0', '1.1', '1.2', '1.5', '2.0'] #, '1.2', '1.5', '2.0'
+
+df_CO2 = pd.DataFrame()
+df_cost = pd.DataFrame()
+
+a = np.zeros((len(lvl),len(co2_limits)))
+
+j = 0 
+for lv in lvl:
+    i = 0
+    for co2_limit in co2_limits:
+        
+        network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'-'+'dist'+dist+'_'+'2030'+'.nc')
+        print(network_name)
+        n = pypsa.Network(network_name) 
+        CO2_price = n.global_constraints.constant
+        System_cost = n.objective / 1e9 # Total system cost, in billion euroes
+            
+        df_CO2[lv+co2_limit] = CO2_price
+        df_cost[lv+co2_limit] = n.global_constraints.mu
+        a[j,i] = System_cost
+        i = i+1
+        
+    j = j+1
+        
+
+x = ['50%','20%','10%','5%', '0%']
+for i in range(len(a)):
+    y = a[i,0:]
+    
+    #plt.figure(i)
+    plt.plot(x,y,label = 'lv.'+str(lvl [i]))
+    plt.title('Total system cost vs. transmission expansion')
+    plt.xlabel('CO2 - level')
+    plt.ylabel('System cost [Billion Euro]')
+    plt.legend()
+
+#%% Plotting the network on the map
 
 n.plot()
 
 for c in n.iterate_components(list(n.components.keys())[2:]):
     print("Component '{}' has {} entries".format(c.name,len(c.df)))
+
+
+print(n.global_constraints.constant) #CO2 limit (constant in the constraint)
+
+print(n.global_constraints.mu) #CO2 price (Lagrance multiplier in the constraint)
+
 
 
 # In[4] Temporal resolution
@@ -272,348 +301,3 @@ n.plot(ax=ax,
        color_geomap=True,
        bus_sizes=0)
 ax.axis('off');
-
-
-
-
-# In[4]
-
-print(n.generators.p_nom_opt)
-print(n.storage_units.p_nom_opt)
-print(n.links.p_nom_opt)
-print(n.generators_t.p)
-
-network = pypsa.Network()
-hours_in_2015 = pd.date_range('2015-01-01T00:00Z','2015-12-31T23:00Z', freq='H')
-network.set_snapshots(hours_in_2015)
-
-network.add("Bus","electricity bus")
-
-
-# The load is represented by the historical electricity demand in 2015 with hourly resolution. 
-# 
-# The file with historical hourly electricity demand for every European country is available in the data folder.
-# 
-# The electricity demand time series were obtained from ENTSOE through the very convenient compilation carried out by the Open Power System Data (OPSD). https://data.open-power-system-data.org/time_series/
-
-# In[3]:
-
-
-# load electricity demand data
-df_elec = pd.read_csv('data/electricity_demand.csv', sep=';', index_col=0) # in MWh
-print(df_elec['DEU'].head())
-
-
-# In[4]:
-
-
-# add load to the bus
-network.add("Load",
-            "load", 
-            bus="electricity bus", 
-            p_set=df_elec['DEU'])
-
-
-# In the optimization, we will minimize the annualized system costs.
-# 
-# We will need to annualize the cost of every generator, we build a function to do it.
-
-# In[5]:
-
-
-def annuity(n,r):
-    """Calculate the annuity factor for an asset with lifetime n years and
-    discount rate of r, e.g. annuity(20,0.05)*20 = 1.6"""
-
-    if r > 0:
-        return r/(1. - 1./(1.+r)**n)
-    else:
-        return 1/n
-
-
-# We include solar PV and onshore wind generators. 
-# 
-# The capacity factors representing the availability of those generators for every European country can be downloaded from the following repositories (select 'optimal' for PV and onshore for wind). 
-# 
-# https://zenodo.org/record/3253876#.XSiVOEdS8l0
-# 
-# https://zenodo.org/record/2613651#.XSiVOkdS8l0
-# 
-# We include also Open Cycle Gas Turbine (OCGT) generators
-# 
-# The cost assumed for the generators are the same as in the paper https://doi.org/10.1016/j.enconman.2019.111977 (open version:  https://arxiv.org/pdf/1906.06936.pdf)
-
-# In[6]:
-
-
-# add the different carriers, only gas emits CO2
-network.add("Carrier", "gas", co2_emissions=0.19) # in t_CO2/MWh_th
-network.add("Carrier", "onshorewind")
-network.add("Carrier", "solar")
-network.add("Carrier", "offshorewind")
-
-
-# add onshore wind generator
-df_onshorewind = pd.read_csv('data/onshore_wind_1979-2017.csv', sep=';', index_col=0)
-CF_wind = df_onshorewind['DEU'][[hour.strftime("%Y-%m-%dT%H:%M:%SZ") for hour in network.snapshots]]
-capital_cost_onshorewind = annuity(20,0.07)*910000*(1+0.033) # in €/MW
-network.add("Generator",
-            "onshorewind",
-            bus="electricity bus",
-            p_nom_extendable=True,
-            carrier="onshorewind",
-            #p_nom_max=1000, # maximum capacity can be limited due to environmental constraints
-            capital_cost = capital_cost_onshorewind,
-            marginal_cost = 0,
-            p_max_pu = CF_wind)
-
-# add offshore wind generator
-df_offshorewind = pd.read_csv('data/offshore_wind_1979-2017.csv', sep=';', index_col=0)
-CF_offwind = df_offshorewind['DEU'][[hour.strftime("%Y-%m-%dT%H:%M:%SZ") for hour in network.snapshots]]
-capital_cost_offshorewind = annuity(30,0.07)*810000*(1+0.033) # in €/MW
-network.add("Generator",
-            "offshorewind",
-            bus="electricity bus",
-            p_nom_extendable=True,
-            carrier="offshorewind",
-            #p_nom_max=1000, # maximum capacity can be limited due to environmental constraints
-            capital_cost = capital_cost_offshorewind,
-            marginal_cost = 0,
-            p_max_pu = CF_offwind)
-
-# add solar PV generator
-df_solar = pd.read_csv('data/pv_optimal.csv', sep=';', index_col=0)
-CF_solar = df_solar['DEU'][[hour.strftime("%Y-%m-%dT%H:%M:%SZ") for hour in network.snapshots]]
-capital_cost_solar = annuity(25,0.07)*425000*(1+0.03) # in €/MW
-network.add("Generator",
-            "solar",
-            bus="electricity bus",
-            p_nom_extendable=True,
-            carrier="solar",
-            #p_nom_max=1000, # maximum capacity can be limited due to environmental constraints
-            capital_cost = capital_cost_solar,
-            marginal_cost = 0,
-            p_max_pu = CF_solar)
-
-# add OCGT (Open Cycle Gas Turbine) generator
-capital_cost_OCGT = annuity(25,0.07)*560000*(1+0.033) # in €/MW
-fuel_cost = 21.6 # in €/MWh_th
-efficiency = 0.39
-marginal_cost_OCGT = fuel_cost/efficiency # in €/MWh_el
-network.add("Generator",
-            "OCGT",
-            bus="electricity bus",
-            p_nom_extendable=True,
-            carrier="gas",
-            #p_nom_max=1000,
-            capital_cost = capital_cost_OCGT,
-            marginal_cost = marginal_cost_OCGT)
-
-
-# We solve the linear optimal power flow (lopf) using Gurobi as solver.
-# 
-# In this case, we are optimising the installed capacity and dispatch of every generator to minimize the total system cost.
-
-# In[7]:
-
-
-network.lopf(network.snapshots, 
-             solver_name='gurobi')
-
-
-# The result ('ok', 'optimal') indicates that the optimizer has found an optimal solution. 
-# 
-# The total cost can be read from the network objetive.
-
-# In[21]:
-
-
-print(network.objective/1000000) #in 10^6 €
-print(network.objective/network.loads_t.p.sum()) # €/MWh
-
-
-# The optimal capacity for every generator can be shown.
-
-# In[23]:
-
-
-network.generators.p_nom_opt # in MW
-
-
-# We can plot now the dispatch of every generator during the first week of the year and the electricity demand.
-# We import the matplotlib package which is very useful to plot results.
-# 
-# We can also plot the electricity mix.
-
-# In[24]:
-
-n1 = 100
-n2 = 400
-
-import matplotlib.pyplot as plt
-
-plt.plot(network.loads_t.p['load'][n1:n2], color='black', label='demand')
-plt.plot(network.generators_t.p['onshorewind'][n1:n2], color='blue', label='onshore wind')
-plt.plot(network.generators_t.p['offshorewind'][n1:n2], color='yellow', label='offshore wind')
-plt.plot(network.generators_t.p['solar'][n1:n2], color='orange', label='solar')
-plt.plot(network.generators_t.p['OCGT'][n1:n2], color='brown', label='gas (OCGT)')
-plt.legend(fancybox=True, shadow=True, loc='best')
-
-
-# In[25]:
-
-
-labels = ['onshore wind',
-          'offshore wind',
-          'solar', 
-          'gas (OCGT)']
-sizes = [network.generators_t.p['onshorewind'].sum(),
-         network.generators_t.p['offshorewind'].sum(),
-         network.generators_t.p['solar'].sum(),
-         network.generators_t.p['OCGT'].sum()]
-
-colors=['blue','yellow', 'orange', 'brown']
-
-plt.pie(sizes, 
-        colors=colors, 
-        labels=labels, 
-        wedgeprops={'linewidth':0})
-plt.axis('equal')
-
-plt.title('Electricity mix', y=1.07)
-
-
-# We can add a global CO2 constraint and solve again.
-
-# In[26]:
-
-
-co2_limit=400000 #tonCO2
-network.add("GlobalConstraint",
-            "co2_limit",
-            type="primary_energy",
-            carrier_attribute="co2_emissions",
-            sense="<=",
-            constant=co2_limit)
-
-network.lopf(network.snapshots, 
-             solver_name='gurobi')
-
-
-# In[27]:
-
-
-network.generators.p_nom_opt #in MW
-
-
-# In[28]:
-
-
-import matplotlib.pyplot as plt
-
-n1 = 1000
-n2 = 1100
-
-plt.plot(network.loads_t.p['load'][n1:n2], color='black', label='demand')
-plt.plot(network.generators_t.p['onshorewind'][n1:n2], color='blue', label='onshore wind')
-plt.plot(network.generators_t.p['offshorewind'][n1:n2], color='yellow', label='offshore wind')
-plt.plot(network.generators_t.p['solar'][n1:n2], color='orange', label='solar')
-plt.plot(network.generators_t.p['OCGT'][n1:n2], color='brown', label='gas (OCGT)')
-plt.legend(fancybox=True, shadow=True, loc='best')
-
-
-# In[29]:
-
-
-labels = ['onshore wind',
-          'offshore wind',
-          'solar', 
-          'gas (OCGT)']
-sizes = [network.generators_t.p['onshorewind'].sum(),
-         network.generators_t.p['offshorewind'].sum(),
-         network.generators_t.p['solar'].sum(),
-         network.generators_t.p['OCGT'].sum()]
-
-colors=['blue','yellow', 'orange', 'brown']
-
-
-plt.pie(sizes, 
-        colors=colors, 
-        labels=labels, 
-        wedgeprops={'linewidth':0})
-plt.axis('equal')
-
-plt.title('Electricity mix', y=1.07)
-
-
-# ## PROJECT INSTRUCTIONS
-# 
-# Based on the previous example, you are asked to carry out the following tasks:
-# 
-# A. Choose a different country/region and calculate the optimal capacities for renewable and non-renewable generators. You can add as many technologies as you want. Remember to provide a reference for the cost assumptions. Plot the dispatch time series for a week in summer and winter. Plot the annual electricity mix. Use the duration curves or the capacity factor to investigate the contribution from different technologies. 
-# 
-# B. Investigate how sensitive is the optimum capacity mix to the global CO2 constraint. E.g., plot the generation mix as a function of the CO2 constraint that you impose. Search for the CO2 emissions in your country (today or in 1990) and refer the emissions allowance to that historical data. 
-# 
-# C. Investigate how sensitive are your results to the interannual variability of solar and wind generation. Plot the average capacity and variability obtained for every generator using different weather years. 
-# 
-# D. Add some storage technology/ies and investigate how they behave and what is their impact on the optimal system configuration. 
-# 
-# E. Discuss what strategies is your system using to balance the renewable generation at different time scales (intraday, seasonal, etc.) 
-# 
-# F. Select on target for decarbonizatio (i.e., one CO2 allowance limit). What is the CO2 price required to achieve that decarbonization level? Search for information on the existing CO2 tax in your country (if any) and discuss your result. 
-# 
-# G. Connect your country with, at least, two neighbour countries. You can assume that the capacities in the neighbours are fixed or cooptimize the whole system. You can also include fixed interconnection capacities or cooptimize them with the generators capacities. Discuss your results.
-# 
-# H. Connect the electricity sector with another sector such as heating or transport, and cooptimize the two sectors. Discuss your results.
-# 
-# I. Finally, select one topic that is under discussion in your region. Design and implement some experiment to obtain relevant information regarding that topic. E.g. 
-# 
-# [-] What are the consequences if Denmark decides not to install more onshore wind? 
-# 
-# [-] Would it be more expensive if France decides to close its nuclear power plants? 
-# 
-# [-] What will be the main impacts of the Viking link?
-# 
-# Write a short report (maximum 10 pages) including your main findings.
-
-# 
-
-# 
-# 
-# 
-# _TIP 1: You can add a link with the following code_
-# 
-# The efficiency will be 1 if you are connecting two countries and different from one if, for example, you are connecting the electricity bus to the heating bus using a heat pump.
-# Setting p_min_pu=-1 makes the link reversible.
-# 
-
-# In[30]:
-
-
-network.add("Link",
-             'country a - country b',
-             bus0="electricity bus country a",
-             bus1="electricity bus country b",
-             p_nom_extendable=True, # capacity is optimised
-             p_min_pu=-1,
-             length=600, # length (in km) between country a and country b
-             capital_cost=400*600) # capital cost * length 
-
-
-# 
-# _TIP 2: You can check the KKT multiplier associated with the constraint with the following code_
-# 
-
-# In[42]:
-
-
-print(network.global_constraints.constant) #CO2 limit (constant in the constraint)
-
-print(network.global_constraints.mu) #CO2 price (Lagrance multiplier in the constraint)
-
-
-# In[ ]:
-
-
-
-
