@@ -65,7 +65,7 @@ n.generators_t.p_max_pu.head()
 #n.stores_t.e.loc["2013","DK0 0 battery"].plot(figsize=(15,3))
 
 df = n.stores_t.e.loc["2013","DK0 0 battery"]
-df1 = n.loads_t.p_set.sum(axis=1)#n.generators_t.p.loc["2013","DE0 0 solar"] #n.loads_t.p_set.sum(axis=1)
+df1 = n.generators_t.p.loc["2013-07","DE0 0 solar"] #n.loads_t.p_set.sum(axis=1)
 
 len(df1)
 
@@ -93,6 +93,708 @@ plt.legend()
 name = r'\01_FFT_solar'
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
 plt.savefig(path+name, dpi=300, bbox_inches='tight') 
+
+#%% Fourier power series with sub-plots for solar and wind
+
+pathdata = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\Data'
+
+
+flex= 'elec_s_37'  
+line_limit = 'lv1.0'
+co2_limit = '0.1'
+solar = 'solar+p3-'
+cost_dist='1'
+
+#line_limit='0.125' 
+co2_limits=['0.5', '0.2', '0.1', '0.05',  '0']
+
+flexs = ['elec_s_37'] 
+techs=['Solar', 'Onwind']
+
+network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')
+
+network = pypsa.Network(network_name)         
+
+datos = pd.DataFrame(index=pd.MultiIndex.from_product([pd.Series(data=techs, name='tech',),
+                                                       pd.Series(data=flexs, name='flex',),
+                                                       pd.Series(data=co2_limits, name='co2_limits',)]), 
+                      columns=pd.Series(data=np.arange(0,8760), name='hour',))
+idx = pd.IndexSlice
+
+for co2_limit in co2_limits:
+        network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')  
+        network = pypsa.Network(network_name)
+        datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.generators_t.p.loc["2013","DE0 0 solar"])
+        datos.loc[idx['Onwind', flex, co2_limit], :] = np.array(network.generators_t.p.loc["2013","DE0 0 onwind"])
+        #datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.storage_units_t.state_of_charge[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum(axis=1)/(6*network.storage_units.p_nom[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum()))
+        #datos.loc[idx['Onwind', flex, co2_limit], :] = np.array(network.stores_t.e[network.stores.index[network.stores.index.str[3:] == 'ror']].sum(axis=1)/network.stores.e_nom_opt[network.stores.index[network.stores.index.str[3:] == 'ror']].sum())
+
+# Save dataframe to pickled pandas object and csv file
+datos.to_pickle(pathdata+'\Data_for_figures/storage_timeseries.pickle') 
+datos.to_csv(pathdata+'\Data_for_figures/storage_timeseries.csv', sep=',') 
+
+
+## The plot
+##### Figure of the Fourier transform for the PHS charging patterns
+datos=pd.read_csv(pathdata+'\Data_for_figures/storage_timeseries.csv', sep=',', header=0, index_col=(0,1,2))
+
+
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('PHS filling level')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+flex='elec_s_37'#'elec_central' #'elec_only'
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['PHS'] #,'battery','H2']
+dic_color={'PHS':'darkgreen'}
+storage_names=['PHS'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['Solar', flex, float(co2_lim)], :]/np.max(datos.loc[idx['Solar', flex, float(co2_lim)], :]), 
+             color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+             label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['Solar', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+name = r'\Fourier_transform_PHS.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg') #bbox_inches='tight' 
+
+## Plot for run of river
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 5))
+gs1 = gridspec.GridSpec(7, 1)
+gs1.update(wspace=0.05)
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['Onwind'] #,'battery','H2']
+dic_color={'Onwind':'darkgreen'}
+storage_names=['Onwind'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[0+2*i:2+2*i,0])    #[4+2*i:6+2*i,0] 
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    #ax1.plot(np.arange(0,8760), datos.loc[idx['PHS', flex, float(co2_lim)], :]/np.max(datos.loc[idx['PHS', flex, float(co2_lim)], :]), 
+    #         color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+    #         label='CO$_2$='+dic_label[co2_lim])
+    #ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['Onwind', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+#plt.title('Run of River Fourier power spectrum')
+name = r'\Fourier_transform_ror.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg')
+
+
+
+#%% Fourier power series with sub-plots
+
+pathdata = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\Data'
+
+
+flex= 'elec_s_37'  
+line_limit = 'lv1.0'
+co2_limit = '0.1'
+solar = 'solar+p3-'
+cost_dist='1'
+
+#line_limit='0.125' 
+co2_limits=['0.5', '0.2', '0.1', '0.05',  '0']
+
+flexs = ['elec_s_37'] 
+techs=['PHS', 'ror']
+
+network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')
+
+network = pypsa.Network(network_name)         
+
+datos = pd.DataFrame(index=pd.MultiIndex.from_product([pd.Series(data=techs, name='tech',),
+                                                       pd.Series(data=flexs, name='flex',),
+                                                       pd.Series(data=co2_limits, name='co2_limits',)]), 
+                      columns=pd.Series(data=np.arange(0,8760), name='hour',))
+idx = pd.IndexSlice
+
+for co2_limit in co2_limits:
+        network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')  
+        network = pypsa.Network(network_name)
+        datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.storage_units_t.state_of_charge[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum(axis=1)/(6*network.storage_units.p_nom[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum()))
+        datos.loc[idx['Onwind', flex, co2_limit], :] = np.array(network.stores_t.e[network.stores.index[network.stores.index.str[3:] == 'ror']].sum(axis=1)/network.stores.e_nom_opt[network.stores.index[network.stores.index.str[3:] == 'ror']].sum())
+
+# Save dataframe to pickled pandas object and csv file
+datos.to_pickle(pathdata+'\data_for_figures/storage_timeseries.pickle') 
+datos.to_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',') 
+
+
+## The plot
+##### Figure of the Fourier transform for the PHS charging patterns
+datos=pd.read_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',', header=0, index_col=(0,1,2))
+
+
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('PHS filling level')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+flex='elec_s_37'#'elec_central' #'elec_only'
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['PHS'] #,'battery','H2']
+dic_color={'PHS':'darkgreen'}
+storage_names=['PHS'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['PHS', flex, float(co2_lim)], :]/np.max(datos.loc[idx['PHS', flex, float(co2_lim)], :]), 
+             color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+             label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['PHS', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+name = r'\Fourier_transform_PHS.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg') #bbox_inches='tight' 
+
+## Plot for run of river
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 5))
+gs1 = gridspec.GridSpec(7, 1)
+gs1.update(wspace=0.05)
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['ror'] #,'battery','H2']
+dic_color={'ror':'darkgreen'}
+storage_names=['ror'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[0+2*i:2+2*i,0])    #[4+2*i:6+2*i,0] 
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    #ax1.plot(np.arange(0,8760), datos.loc[idx['PHS', flex, float(co2_lim)], :]/np.max(datos.loc[idx['PHS', flex, float(co2_lim)], :]), 
+    #         color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+    #         label='CO$_2$='+dic_label[co2_lim])
+    #ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['PHS', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+#plt.title('Run of River Fourier power spectrum')
+name = r'\Fourier_transform_ror.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg')
+
+#%% Extracting data for onshore wind for Europe
+
+flex= 'elec_s_37'  
+line_limit = 'lv1.0'
+co2_limit = '0.1'
+solar = 'solar+p3-'
+cost_dist='1'
+
+#line_limit='0.125' 
+co2_limits=['0.5', '0.2', '0.1', '0.05',  '0']
+
+
+flexs = ['elec_s_37'] 
+techs=['Solar', 'Onwind']
+
+network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')
+
+network = pypsa.Network(network_name)         
+
+datos = pd.DataFrame(index=pd.MultiIndex.from_product([pd.Series(data=techs, name='tech',),
+                                                       pd.Series(data=flexs, name='flex',),
+                                                       pd.Series(data=co2_limits, name='co2_limits',)]), 
+                      columns=pd.Series(data=np.arange(0,8760), name='hour',))
+idx = pd.IndexSlice
+
+for co2_limit in co2_limits:
+        network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')  
+        network = pypsa.Network(network_name)
+        datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.generators_t.p[network.generators.index[network.generators.carrier == 'solar']].sum(axis=1))
+        datos.loc[idx['Onwind', flex, co2_limit], :] = np.array(network.generators_t.p[network.generators.index[network.generators.carrier == 'onwind']].sum(axis=1))
+
+
+# Save dataframe to pickled pandas object and csv file
+datos.to_pickle(pathdata+'\data_for_figures/storage_timeseries.pickle') 
+datos.to_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',') 
+
+# In[2]:
+
+## The plot
+##### Figure of the Fourier transform for the PHS charging patterns
+datos=pd.read_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',', header=0, index_col=(0,1,2))
+
+
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('Solar capacity factor')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+flex='elec_s_37'#'elec_central' #'elec_only'
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['Solar'] #,'battery','H2']
+dic_color={'Solar':'darkgreen'}
+storage_names=['Solar'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['Solar', flex, float(co2_lim)], :]/np.max(datos.loc[idx['Solar', flex, float(co2_lim)], :]), 
+             color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+             label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['Solar', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+name = r'\Fourier_transform_Solar.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg') #bbox_inches='tight' 
+
+## Plot for Onshore wind
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('Onshore capacity factor')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['Onwind'] #,'battery','H2']
+dic_color={'Onwind':'darkgreen'}
+storage_names=['Onwind'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    #[4+2*i:6+2*i,0] 
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['Onwind', flex, float(co2_lim)], :]/np.max(datos.loc[idx['Onwind', flex, float(co2_lim)], :]), 
+            color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+            label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['Onwind', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+#plt.title('Run of River Fourier power spectrum')
+name = r'\Fourier_transform_Onwind.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg')
+
+b = network.generators_t.p[network.generators.index[network.generators.carrier == 'solar']].sum(axis=1)                  
+
+plt.figure()
+plt.plot(np.arange(0,8760),b)
+
+#datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.storage_units_t.state_of_charge[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum(axis=1)/(6*network.storage_units.p_nom[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum()))
+        
+#%% Extracting data for H2 and battery storage
+
+flex= 'elec_s_37'  
+line_limit = 'lv1.0'
+co2_limit = '0.1'
+solar = 'solar+p3-'
+cost_dist='1'
+
+#line_limit='0.125' 
+co2_limits=['0.5', '0.2', '0.1', '0.05',  '0']
+
+
+flexs = ['elec_s_37'] 
+techs=['H2 Store', 'Battery']
+
+network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')
+
+network = pypsa.Network(network_name)         
+
+datos = pd.DataFrame(index=pd.MultiIndex.from_product([pd.Series(data=techs, name='tech',),
+                                                       pd.Series(data=flexs, name='flex',),
+                                                       pd.Series(data=co2_limits, name='co2_limits',)]), 
+                      columns=pd.Series(data=np.arange(0,8760), name='hour',))
+idx = pd.IndexSlice
+
+for co2_limit in co2_limits:
+        network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')  
+        network = pypsa.Network(network_name)
+        datos.loc[idx['H2 Store', flex ,co2_limit], :] = np.array(network.stores_t.p[network.stores.index[network.stores.carrier == 'H2']].sum(axis=1))
+        datos.loc[idx['Battery', flex, co2_limit], :] = np.array(network.stores_t.p[network.stores.index[network.stores.carrier == 'battery']].sum(axis=1))
+
+
+# Save dataframe to pickled pandas object and csv file
+datos.to_pickle(pathdata+'\data_for_figures/storage_timeseries.pickle') 
+datos.to_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',') 
+
+# In[2]:
+
+## The plot
+##### Figure of the Fourier transform for the PHS charging patterns
+datos=pd.read_csv(pathdata+'\data_for_figures/storage_timeseries.csv', sep=',', header=0, index_col=(0,1,2))
+
+
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('H2 Storage')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+flex='elec_s_37'#'elec_central' #'elec_only'
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['H2'] #,'battery','H2']
+dic_color={'H2':'darkgreen'}
+storage_names=['H2'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['H2 Store', flex, float(co2_lim)], :]/np.max(datos.loc[idx['H2 Store', flex, float(co2_lim)], :]), 
+             color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+             label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['H2 Store', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+name = r'\Fourier_transform_H2.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg') #bbox_inches='tight' 
+
+## Plot for Onshore wind
+plt.style.use('seaborn-ticks')
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+plt.figure(figsize=(10, 10))
+gs1 = gridspec.GridSpec(10, 1)
+gs1.update(wspace=0.05)
+
+ax1 = plt.subplot(gs1[0:3,0])
+ax1.set_ylabel('Battery')
+ax1.set_xlabel('hour')
+ax1.set_xlim(0,8760)
+ax1.set_ylim(0,1)
+
+co2_limits=['0.5', '0.2', '0']
+storage_names=['Battery'] #,'battery','H2']
+dic_color={'Battery':'darkgreen'}
+storage_names=['Battery'] #,'battery','H2']
+dic_color={'0.5':'olive','0.2':'darkgreen','0':'red'}
+dic_label={'0.5':'50%','0.2':'20%','0':'0%'}
+dic_alpha={'0.5':1,'0.2':1,'0':1}
+dic_linewidth={'0.5':2,'0.2':2,'0':2}
+
+for i,co2_lim in enumerate(co2_limits):
+    ax2 = plt.subplot(gs1[4+2*i:6+2*i,0])    #[4+2*i:6+2*i,0] 
+    ax2.set_xlim(1,10000)
+    ax2.set_ylim(0,1.2)
+    plt.axvline(x=24, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*7, color='lightgrey', linestyle='--')
+    plt.axvline(x=24*30, color='lightgrey', linestyle='--')
+    plt.axvline(x=8760, color='lightgrey', linestyle='--')   
+    ax1.plot(np.arange(0,8760), datos.loc[idx['Battery', flex, float(co2_lim)], :]/np.max(datos.loc[idx['Battery', flex, float(co2_lim)], :]), 
+            color=dic_color[co2_lim], alpha=dic_alpha[co2_lim], linewidth=dic_linewidth[co2_lim],
+            label='CO$_2$='+dic_label[co2_lim])
+    ax1.legend(loc=(0.2, 1.05), ncol=3, shadow=True,fancybox=True,prop={'size':18})
+    n_years=1
+    t_sampling=1 # sampling rate, 1 data per hour
+    x = np.arange(1,8761*n_years, t_sampling) 
+    y = np.hstack([np.array(datos.loc[idx['Battery', flex, float(co2_lim)], :])]*n_years)
+    n = len(x)
+    y_fft=np.fft.fft(y)/n #n for normalization    
+    frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
+    period=np.array([1/f for f in frq])        
+    ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
+                 linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
+    ax2.legend(loc='center right', shadow=True,fancybox=True,prop={'size':18})
+    #ax2.set_yticks([0, 0.1, 0.2])
+    #ax2.set_yticklabels(['0', '0.1', '0.2'])
+    plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fontsize=14)
+    plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
+    if i==2:
+        ax2.set_xticks([1, 10, 100, 1000, 10000])
+        ax2.set_xticklabels(['1', '10', '100', '1000', '10000'])
+        ax2.set_xlabel('cycling period (hours)')
+    else: 
+        ax2.set_xticks([])
+#plt.title('Run of River Fourier power spectrum')
+name = r'\Fourier_transform_Battery.jpg'
+plt.show()
+plt.savefig(path+name,dpi=300,format='jpg')
+
+#datos.loc[idx['Solar', flex ,co2_limit], :] = np.array(network.storage_units_t.state_of_charge[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum(axis=1)/(6*network.storage_units.p_nom[network.storage_units.index[network.storage_units.carrier == 'PHS']].sum()))
+        
 
 
 #%%  Making a double for-loop for different cases

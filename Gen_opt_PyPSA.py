@@ -69,9 +69,9 @@ flex= 'elec_s_37'
 lv = 'lv1.0'
 co2_limit = 'Co2L0.1'
 solar = 'solar+p3'
-dist = '10'
+dist = '0.1'
 co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
-lvl = ['1.0', '1.1', '2.0'] #, '1.2', '1.5', '2.0'
+lvl = ['1.0', '1.1', '1.2', '1.5', '2.0'] #, '1.2', '1.5', '2.0'
 
 
 df_g = pd.DataFrame()       #DataFrame for generator capacity
@@ -175,7 +175,7 @@ flex= 'elec_s_37'
 lv = 'lv1.0'
 co2_limit = 'Co2L0.1'
 solar = 'solar+p3'
-dist = '10'
+dist = '1'
 co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
 lvl = ['1.0', '1.1', '1.2', '1.5', '2.0'] #, '1.2', '1.5', '2.0'
 
@@ -213,6 +213,10 @@ for i in range(len(a)):
     plt.xlabel('CO2 - level')
     plt.ylabel('System cost [Billion Euro]')
     plt.legend()
+
+# Save the figure in the selected path
+name = r'\01_price' # Assign the name for the figure
+plt.savefig(path+name, dpi=300, bbox_inches='tight')   
 
 #%% Plotting the network on the map
 
@@ -295,9 +299,13 @@ fig,ax = plt.subplots(
 n.plot(ax=ax,
        bus_colors='gray',
        branch_components=["Line"],
-       line_widths=n.lines.s_nom_opt/3e3,
+       line_widths=n.lines.s_nom_opt/9e3,
        line_colors=loading,
        line_cmap=plt.cm.viridis,
        color_geomap=True,
        bus_sizes=0)
 ax.axis('off');
+
+# Save the figure in the selected path
+name = r'\01_map' # Assign the name for the figure
+plt.savefig(path+name, dpi=300, bbox_inches='tight')   
