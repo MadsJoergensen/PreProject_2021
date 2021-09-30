@@ -22,7 +22,7 @@ import matplotlib.gridspec as gridspec
 # 
 # We select a country, in this case, Spain (ESP), and add one node (electricity bus) to the network.
 
-n = pypsa.Network("elec_s_37_lv1.0__Co2L0.05-solar+p3-dist10_2030.nc")
+n = pypsa.Network("base.nc")
 
 # In[2]:
 
@@ -69,7 +69,7 @@ flex= 'elec_s_37'
 lv = 'lv1.0'
 co2_limit = 'Co2L0.1'
 solar = 'solar+p3'
-dist = '0.1'
+dist = '10'
 co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
 lvl = ['1.0', '1.1', '1.2', '1.5', '2.0'] #, '1.2', '1.5', '2.0'
 
@@ -91,7 +91,7 @@ for lv in lvl:
 
 #Filtering values for the generators, with the transmission expansion
 df1 = df_g.filter(like='1.0')
-df2 = df_g.filter(like='1.1')
+df2 = df_g.filter(like='1.2')
 df3 = df_g.filter(like='2.0')
 
 plt.figure(1)
@@ -129,6 +129,8 @@ str(dist).replace('.', '')
 name = r'\01_generator_dist='+str(dist).replace('.', '')
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
 plt.savefig(path+name, dpi=300, bbox_inches='tight') 
+
+# In[2]
 
 #Filtering values for the storage capacity, with the transmission expansion
 
@@ -175,7 +177,7 @@ flex= 'elec_s_37'
 lv = 'lv1.0'
 co2_limit = 'Co2L0.1'
 solar = 'solar+p3'
-dist = '1'
+dist = '10'
 co2_limits=['Co2L0.5', 'Co2L0.2', 'Co2L0.1', 'Co2L0.05',  'Co2L0'] # the corresponding CO2 limits in the code
 lvl = ['1.0', '1.1', '1.2', '1.5', '2.0'] #, '1.2', '1.5', '2.0'
 
@@ -202,23 +204,27 @@ for lv in lvl:
         
     j = j+1
         
-
+plt.figure(figsize=(9,5))
 x = ['50%','20%','10%','5%', '0%']
 for i in range(len(a)):
     y = a[i,0:]
     
     #plt.figure(i)
     plt.plot(x,y,label = 'lv.'+str(lvl [i]))
-    plt.title('Total system cost vs. transmission expansion')
-    plt.xlabel('CO2 - level')
-    plt.ylabel('System cost [Billion Euro]')
-    plt.legend()
+    plt.title('Total system cost vs. transmission expansion- Dist='+str(dist),size = 18)
+    plt.xlabel('CO2 - level compared to 1990',size = 15)
+    plt.ylabel('System cost [Billion Euro]',size=15)
+    plt.legend(prop={"size":12})
 
 # Save the figure in the selected path
-name = r'\01_price' # Assign the name for the figure
+name = r'\01_system_cost_dist='+str(dist).replace('.', '') # Assign the name for the figure
 plt.savefig(path+name, dpi=300, bbox_inches='tight')   
 
 #%% Plotting the network on the map
+
+#Specify the path where to store the plots
+path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
+
 
 n.plot()
 
@@ -230,6 +236,9 @@ print(n.global_constraints.constant) #CO2 limit (constant in the constraint)
 
 print(n.global_constraints.mu) #CO2 price (Lagrance multiplier in the constraint)
 
+# Save the figure in the selected path
+name = r'\06_DK_DE_GB' # Assign the name for the figure
+plt.savefig(path+name, dpi=300, bbox_inches='tight')   
 
 
 # In[4] Temporal resolution
