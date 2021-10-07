@@ -34,7 +34,7 @@ print('\n','Temporal solution is = ',len(n.snapshots))
 
 
 #%% Getting all the static data in the .nc file
-s
+
 generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
 stores = n.stores.groupby("carrier")["e_nom_opt"].sum()
 storage_unit = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
