@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+#Updated script for Anders
+
 #%%
 
 vegetables = ["cucumber", "tomato", "lettuce", "asparagus",
