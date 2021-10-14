@@ -62,11 +62,15 @@ for co2_limit in co2_limits:
         datos.loc[idx[techs, flex ,co2_limit], :] = np.array(network.links_t.p0.filter(like='distribution').sum(1))
 
 
-df1 =test_df2
 
-len(df1)
+#%% plotting the data
 
-n_years=1
+# Define which data you want to extract
+n_years = 1         #default value for the years
+co2_limit = '0.2'     #define which co2 level you want to use
+
+df1 = np.hstack([np.array(datos.loc[idx['Distribution', flex, co2_limit], :])]*n_years)
+
 t_sampling=1 # sampling rate, 1 data per hour
 x = np.arange(1,(len(df1)+1)*n_years, t_sampling) 
 y = np.hstack([np.array(df1)]*n_years)
@@ -76,15 +80,14 @@ frq=np.arange(0,1/t_sampling,1/(t_sampling*nn))
 period=np.array([1/f for f in frq])
 
 
-plt.figure(2,figsize=(8,5))
-
+plt.figure(2,figsize=(10,5))
 plt.semilogx(period[1:nn//2],abs(y_fft[1:nn//2])**2/np.max(abs(y_fft[1:nn//2])**2),color = 'blue',label = 'Distribution grid')
 plt.xticks([1, 10, 100, 1000, 10000],size = 14)
 plt.yticks(size = 14)
 #plt.set_xlabel(['1', '10', '100', '1000', '10000'])
 plt.xlabel('cycling period (hours)',size = 12)
 plt.ylabel('Nomalized frequency',size = 12)
-plt.title('FFT plot of cycling frequency',size = 18,color = 'Orange')
+plt.title('FFT plot of cycling frequency - CO2 limit = '+str(co2_limit),size = 16,color = 'blue')
 plt.axvline(x=24, color='lightgrey', linestyle='--')
 plt.axvline(x=24*7, color='lightgrey', linestyle='--')
 plt.axvline(x=24*30, color='lightgrey', linestyle='--')
@@ -94,11 +97,11 @@ plt.text(24*7+20, 0.95, 'week', horizontalalignment='left', color='dimgrey', fon
 plt.text(24*30+20, 0.95, 'month', horizontalalignment='left', color='dimgrey', fontsize=14)
 plt.text(len(df1)+200, 0.95, 'year', horizontalalignment='left', color='dimgrey', fontsize=14)
 plt.axis([0,10000+6000,0,1])
-plt.legend(fontsize=12,loc='best')
+plt.legend(fontsize=11,loc='upper left')
 
 
 # Save the figure in the selected path
-name = r'\01_FFT_grid'
+name = r'\01_FFT_grid_co2_'+str(co2_limit)+'.png'
 #plt.savefig(r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'+name, dpi=300,  bbox_inches='tight')
 plt.savefig(path+name, dpi=300, bbox_inches='tight') 
 
@@ -133,7 +136,8 @@ for i,co2_lim in enumerate(co2_limits):
     t_sampling=1 # sampling rate, 1 data per hour
     x = np.arange(1,8761*n_years, t_sampling) 
     #y = np.hstack([np.array(datos.loc[idx['Onwind', flex, float(co2_lim)], :])]*n_years)
-    y = np.hstack([np.array(df1)]*n_years) 
+    #y = np.hstack([np.array(datos.loc[idx['Distribution', flex, float(co2_lim)], :])]*n_years) 
+    y = np.hstack([np.array(datos.loc[idx['Distribution', flex, str(co2_lim)], :])]*n_years) 
     n = len(x)
     y_fft=np.fft.fft(y)/n #n for normalization    
     frq=np.arange(0,1/t_sampling,1/(t_sampling*n))        
