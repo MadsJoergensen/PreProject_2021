@@ -9,51 +9,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-#Updated script for Anders
-
-#%%
-
-vegetables = ["cucumber", "tomato", "lettuce", "asparagus",
-              "potato", "wheat", "barley"]
-farmers = ["Farmer Joe", "Upland Bros.", "Smith Gardening",
-           "Agrifun", "Organiculture", "BioGoods Ltd.", "Cornylee Corp."]
-
-harvest = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
-                    [2.4, 0.0, 4.0, 1.0, 2.7, 0.0, 0.0],
-                    [1.1, 2.4, 0.8, 4.3, 1.9, 4.4, 0.0],
-                    [0.6, 0.0, 0.3, 0.0, 3.1, 0.0, 0.0],
-                    [0.7, 1.7, 0.6, 2.6, 2.2, 6.2, 0.0],
-                    [1.3, 1.2, 0.0, 0.0, 0.0, 3.2, 5.1],
-                    [0.1, 2.0, 0.0, 1.4, 0.0, 1.9, 6.3]])
-
-
-fig, ax = plt.subplots()
-im = ax.imshow(harvest)
-
-# We want to show all ticks...
-ax.set_xticks(np.arange(len(farmers)))
-ax.set_yticks(np.arange(len(vegetables)))
-# ... and label them with the respective list entries
-ax.set_xticklabels(farmers)
-ax.set_yticklabels(vegetables)
-
-# Rotate the tick labels and set their alignment.
-plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-         rotation_mode="anchor")
-
-# Loop over data dimensions and create text annotations.
-for i in range(len(vegetables)):
-    for j in range(len(farmers)):
-        text = ax.text(j, i, harvest[i, j],
-                       ha="center", va="center", color="w")
-
-ax.set_title("Harvest of local farmers (in tons/year)")
-fig.tight_layout()
-
-#plt.colorbar()
-plt.show()
-
-
 #%%
 
 import matplotlib
@@ -466,7 +421,7 @@ fig.savefig('Plots/03_gas', dpi=300, bbox_inches='tight')
         
 flex= 'elec_s_37'  
 lv = '1.0'
-co2_limits = 'Co2L0.05'
+co2_limits = 'Co2L0.1'
 solar = 'solar+p3'
 dist = '1'
 dist = ['0.1','0.5','1','2','10']  # '1'
@@ -515,10 +470,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(solar_pv, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - solar PV - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - solar PV - CO2 = 0",fontsize=15)
 fig.tight_layout()
 
 fig.savefig('Plots/04_solar_PV', dpi=300, bbox_inches='tight') 
@@ -530,10 +485,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(solar_roof, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - solar rooftop - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - solar rooftop - CO2 = 0",fontsize=15)
 fig.tight_layout()
 plt.show()
 
@@ -545,10 +500,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(onwind, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - onwind - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - onwind - CO2 = 0",fontsize=15)
 fig.tight_layout()
 plt.show()
 
@@ -560,10 +515,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(offwind_ac, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - offwind AC - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - offwind AC - CO2 = 0",fontsize=15)
 fig.tight_layout()
 plt.show()
 
@@ -575,10 +530,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(offwind_dc, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - offwind DC - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - offwind DC - CO2 = 0",fontsize=15)
 fig.tight_layout()
 plt.show()
 
@@ -590,10 +545,10 @@ fig, ax = plt.subplots(figsize=(15,10))
 
 im, cbar = heatmap(gas, index1, index2, ax=ax, clim = [0,100],
                    cmap="YlGn", cbarlabel="Installed capacity [%]")
-texts = annotate_heatmap(im, valfmt="{x:.1f}")
+texts = annotate_heatmap(im, valfmt="{x:.1f}%")
 ax.set_ylabel("Transmission line volume expansion")
 ax.set_xlabel("Investment cost of distribution grid")
-ax.set_title("Contour plot of installed capacity - gas - CO2 = 0.05",fontsize=15)
+ax.set_title("Contour plot of installed capacity - gas - CO2 = 0",fontsize=15)
 fig.tight_layout()
 plt.show()
 

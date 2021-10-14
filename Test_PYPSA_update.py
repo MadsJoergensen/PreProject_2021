@@ -23,7 +23,7 @@ import cartopy.crs as ccrs
 # 
 # We select a country, in this case, Spain (ESP), and add one node (electricity bus) to the network.
 
-n = pypsa.Network("elec_s_37_lv2.0__Co2L0-T-H-B-I-solar+p3-dist1_2030.nc")
+n = pypsa.Network("elec_s_37_lv1.0__Co2L0.1-solar+p3-dist1_2030.nc")
 
 # In[2]: counting the number of entries in the list of components
 
@@ -102,7 +102,7 @@ def pieplot(x,color): #choose from colors 'copper', 'hsv', 'jet', 'bwr'
     plt.show()
     return
 
-pieplot(generators,'copper')   #plotting the pie-plot from different data
+pieplot(generators,'jet')   #plotting the pie-plot from different data
 
 
 #%% Plotting the network on the map
@@ -167,9 +167,11 @@ plt.ylabel('Normalized Capacity',color='orange')
 plt.axis([0,len(DK_t),0,1])
 plt.show()
 
-
 #plotting the gas consumption
-plt.plot(EU_g)
+plt.plot(EU_g,label='EU gas')
+plt.plot(DK_t,label='DK onwind')
+plt.legend()
+#plt.axis(['2013-01','2014-01',0,max(DK_t)])
 plt.show()
 n.generators_t.p.filter(like='solar')#.sum(axis=1)
 
@@ -372,10 +374,10 @@ n.generators_t.p.sum(axis=1).plot(figsize=(15,3),color='r')
 
 
 #plotting the solar generation for Italy in july
-n.generators_t.p.loc["2013-08","IT0 0 solar"].plot(figsize=(15,3))
+n.generators_t.p.loc["2013-07","IT0 0 solar"].plot(figsize=(15,3))
 
 #plotting the onshore wind generation for Estonia in july
-n.generators_t.p.loc["2013-1","DK0 0 onwind"].plot(figsize=(15,3))
+n.generators_t.p.loc["2013-07","DK0 0 onwind"].plot(figsize=(15,3))
 
 
 # In[7] Total Annual System Cost
