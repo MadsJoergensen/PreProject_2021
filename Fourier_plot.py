@@ -30,7 +30,6 @@ test = n.buses_t.p
 
 test_df1 = test.filter(like='low voltage').sum(1)
 
-
 test = n.links_t.p0
 
 test_df2 = test.filter(like='distribution').sum(1)
@@ -81,7 +80,7 @@ period=np.array([1/f for f in frq])
 
 
 plt.figure(2,figsize=(10,5))
-plt.semilogx(period[1:nn//2],abs(y_fft[1:nn//2])**2/np.max(abs(y_fft[1:nn//2])**2),color = 'blue',label = 'Distribution grid')
+plt.semilogx(period[1:nn//2],abs(y_fft[1:nn//2])**2/np.max(abs(y_fft[1:nn//2])**2),color = 'orange',label = 'Distribution grid')
 plt.xticks([1, 10, 100, 1000, 10000],size = 14)
 plt.yticks(size = 14)
 #plt.set_xlabel(['1', '10', '100', '1000', '10000'])
@@ -144,7 +143,7 @@ for i,co2_lim in enumerate(co2_limits):
     period=np.array([1/f for f in frq])        
     ax2.semilogx(period[1:n//2],abs(y_fft[1:n//2])**2/np.max(abs(y_fft[1:n//2])**2), color=dic_color[co2_lim],
                  linewidth=2, label='CO$_2$ = '+dic_label[co2_lim])  
-    ax2.legend(loc='center left', shadow=True,fancybox=True,prop={'size':12})
+    ax2.legend(loc='upper left', shadow=True,fancybox=True,prop={'size':10})
     #ax2.set_yticks([0, 0.1, 0.2])
     #ax2.set_yticklabels(['0', '0.1', '0.2'])
     plt.text(26, 0.95, 'day', horizontalalignment='left', color='dimgrey', fontsize=14)
