@@ -18,7 +18,7 @@ import matplotlib.gridspec as gridspec
 # 
 # We select a country, in this case, Spain (ESP), and add one node (electricity bus) to the network.
 
-n = pypsa.Network("elec_s_37_lv1.0__Co2L0-solar+p3-dist10_2030.nc")
+n = pypsa.Network("elec_s_37_lv1.0__Co2L0-solar+p3-dist1_2030.nc")
 
 #Specify the path where to store the plots
 path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
@@ -32,8 +32,23 @@ test_df1 = test.filter(like='low voltage').sum(1)
 
 test = n.links_t.p0
 
-test_df2 = test.filter(like='distribution').sum(1)
+test_df2 = test.filter(like='distribution')
 
+df = test_df2
+index = df[df < 0]
+
+df = df.loc["2013 01 01":"2013 12 31", ["DK0 0 electricity distribution grid"]]
+df.plot()
+
+df1 = df.resample('W').mean()
+
+u = 7
+df2 = df[u+168:u+24*7].sum()/(24*7)
+
+print(df2)
+
+
+df1.plot()
 #%% Making fourier plots for the distribution grid
 
 
@@ -54,6 +69,8 @@ datos = pd.DataFrame(index=pd.MultiIndex.from_product([pd.Series(data=techs, nam
                                                        pd.Series(data=co2_limits, name='co2_limits',)]), 
                       columns=pd.Series(data=np.arange(0,8760), name='hour',))
 idx = pd.IndexSlice
+
+
 
 for co2_limit in co2_limits:
         network_name= (flex + '_' + line_limit + '__' +'Co2L'+ co2_limit+ '-' + solar +'dist'+cost_dist+'_'+'2030'+'.nc')  
@@ -86,7 +103,7 @@ plt.yticks(size = 14)
 #plt.set_xlabel(['1', '10', '100', '1000', '10000'])
 plt.xlabel('cycling period (hours)',size = 12)
 plt.ylabel('Nomalized frequency',size = 12)
-plt.title('FFT plot of cycling frequency - CO2 limit = '+str(co2_limit),size = 16,color = 'blue')
+plt.title('FFT plot of cycling frequency - CO2 limit = '+str(co2_limit),size = 16,color = 'black')
 plt.axvline(x=24, color='lightgrey', linestyle='--')
 plt.axvline(x=24*7, color='lightgrey', linestyle='--')
 plt.axvline(x=24*30, color='lightgrey', linestyle='--')
