@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-n = pypsa.Network("elec_s_37_lv2.0__Co2L0-solar+p3-dist10_2030.nc")
+n = pypsa.Network("elec_s_37_lv2.0__Co2L0.05-solar+p3-dist10_2030.nc")
 
 import matplotlib
 
@@ -184,27 +184,30 @@ for lv in lvl:
         network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'-'+'dist'+dist+'_'+'2030'+'.nc')
         print(network_name)
         n = pypsa.Network(network_name) 
-        gen_sum = n.generators_t.p.sum(axis=1).sum()
         
-        
+        #Extracting the data form the NC file
         onwind_calc = n.generators_t.p.filter(like='onwind').sum().sum()
-        onwind[i,j] = onwind_calc/gen_sum*100
-        
         offwind_ac_calc = n.generators_t.p.filter(like='offwind-ac').sum().sum()
-        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100
-        
         offwind_dc_calc = n.generators_t.p.filter(like='offwind-dc').sum().sum()
-        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100
-        
-        
         solar_PV = n.generators_t.p.filter(like='solar').sum()
         solar_PV_calc = solar_PV[0:37].sum()
-        solar_pv[i,j] = solar_PV_calc/gen_sum*100
-        
         solar_roof_calc = n.generators_t.p.filter(like='solar roof').sum().sum()
-        solar_roof[i,j] = solar_roof_calc/gen_sum*100
+        gas_calc = -n.links_t.p1.filter(like='GT').sum().sum()
         
-        gas_calc = n.generators_t.p.filter(like='gas').sum().sum()
+        #summing over the generators
+        gen_sum = (onwind_calc 
+        + offwind_ac_calc
+        + offwind_dc_calc
+        + solar_PV_calc
+        + solar_roof_calc
+        + gas_calc)
+
+        # Adding to the matrices
+        onwind[i,j] = onwind_calc/gen_sum*100
+        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100             
+        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100                        
+        solar_pv[i,j] = solar_PV_calc/gen_sum*100
+        solar_roof[i,j] = solar_roof_calc/gen_sum*100                
         gas[i,j] = gas_calc/gen_sum*100
         
         
@@ -213,7 +216,6 @@ for lv in lvl:
     j = 0           #resets the inner counter
      
 #%% Plotting data in contour plots
-
 
 #plot for solar PV
 
@@ -328,27 +330,30 @@ for dis in dist:
         network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limit+ '-' + solar +'-'+'dist'+dis+'_'+'2030'+'.nc')
         print(network_name)
         n = pypsa.Network(network_name) 
-        gen_sum = n.generators_t.p.sum(axis=1).sum()
         
-        
+        #Extracting the data form the NC file
         onwind_calc = n.generators_t.p.filter(like='onwind').sum().sum()
-        onwind[i,j] = onwind_calc/gen_sum*100
-        
         offwind_ac_calc = n.generators_t.p.filter(like='offwind-ac').sum().sum()
-        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100
-        
         offwind_dc_calc = n.generators_t.p.filter(like='offwind-dc').sum().sum()
-        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100
-        
-        
         solar_PV = n.generators_t.p.filter(like='solar').sum()
         solar_PV_calc = solar_PV[0:37].sum()
-        solar_pv[i,j] = solar_PV_calc/gen_sum*100
-        
         solar_roof_calc = n.generators_t.p.filter(like='solar roof').sum().sum()
-        solar_roof[i,j] = solar_roof_calc/gen_sum*100
+        gas_calc = -n.links_t.p1.filter(like='GT').sum().sum()
         
-        gas_calc = n.generators_t.p.filter(like='gas').sum().sum()
+        #summing over the generators
+        gen_sum = (onwind_calc 
+        + offwind_ac_calc
+        + offwind_dc_calc
+        + solar_PV_calc
+        + solar_roof_calc
+        + gas_calc)
+
+        # Adding to the matrices
+        onwind[i,j] = onwind_calc/gen_sum*100
+        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100             
+        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100                        
+        solar_pv[i,j] = solar_PV_calc/gen_sum*100
+        solar_roof[i,j] = solar_roof_calc/gen_sum*100                
         gas[i,j] = gas_calc/gen_sum*100
         
         
@@ -357,7 +362,6 @@ for dis in dist:
     j = 0           #resets the inner counter
      
 #%% Plotting data in contour plots
-
 
 #plot for solar PV
 
@@ -473,36 +477,37 @@ for dis in dist:
         network_name= (flex+ '_' + 'lv'+ lv + '__' +co2_limits+ '-' + solar +'-'+'dist'+dis+'_'+'2030'+'.nc')
         print(network_name)
         n = pypsa.Network(network_name) 
-        gen_sum = n.generators_t.p.sum(axis=1).sum()
         
-        
+        #Extracting the data form the NC file
         onwind_calc = n.generators_t.p.filter(like='onwind').sum().sum()
-        onwind[i,j] = onwind_calc/gen_sum*100
-        
         offwind_ac_calc = n.generators_t.p.filter(like='offwind-ac').sum().sum()
-        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100
-        
         offwind_dc_calc = n.generators_t.p.filter(like='offwind-dc').sum().sum()
-        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100
-        
-        
         solar_PV = n.generators_t.p.filter(like='solar').sum()
         solar_PV_calc = solar_PV[0:37].sum()
-        solar_pv[i,j] = solar_PV_calc/gen_sum*100
-        
         solar_roof_calc = n.generators_t.p.filter(like='solar roof').sum().sum()
-        solar_roof[i,j] = solar_roof_calc/gen_sum*100
+        gas_calc = -n.links_t.p1.filter(like='GT').sum().sum()
         
-        gas_calc = n.generators_t.p.filter(like='gas').sum().sum()
+        #summing over the generators
+        gen_sum = (onwind_calc 
+        + offwind_ac_calc
+        + offwind_dc_calc
+        + solar_PV_calc
+        + solar_roof_calc
+        + gas_calc)
+
+        # Adding to the matrices
+        onwind[i,j] = onwind_calc/gen_sum*100
+        offwind_ac[i,j] = offwind_ac_calc/gen_sum*100             
+        offwind_dc[i,j] = offwind_dc_calc/gen_sum*100                        
+        solar_pv[i,j] = solar_PV_calc/gen_sum*100
+        solar_roof[i,j] = solar_roof_calc/gen_sum*100                
         gas[i,j] = gas_calc/gen_sum*100
-        
         
         j = j+1
     i = i +1        #adds one itteration to outer counter
     j = 0           #resets the inner counter
      
 #%% Plotting data in contour plots
-
 
 #plot for solar PV
 

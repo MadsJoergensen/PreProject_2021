@@ -23,7 +23,7 @@ import cartopy.crs as ccrs
 # 
 # We select a country, in this case, Spain (ESP), and add one node (electricity bus) to the network.
 
-n = pypsa.Network("elec_s_37_lv1.0__Co2L0.1-solar+p3-dist1_2030.nc")
+n = pypsa.Network("elec_s_37_lv1.0__Co2L0.5-solar+p3-dist10_2030.nc")
 
 # In[2]: counting the number of entries in the list of components
 
@@ -134,19 +134,27 @@ plt.savefig(path+name, dpi=300, bbox_inches='tight')
 #%% Creating duration curves for technologies
 
 generators = n.generators.groupby("carrier")["p_nom_opt"].sum()
+gas_tech = n.links.groupby("carrier")["p_nom_opt"].sum()
+
+DK_gas_p0 = n.links_t.p0.loc["2013"].filter(like='DK0 0 OCGT')
+DK_gas_p1 = n.links_t.p1.loc["2013"].filter(like='DK0 0 OCGT')
+
+eff = DK_gas_p1.div(DK_gas_p0)
+
+#%%
 
 df = n.generators
 
 DK_onwind = df.loc["DK0 0 onwind", ["p_nom_opt"]]
 DK_solar = df.loc["DK0 0 solar", ["p_nom_opt"]]
 EU_gas = df.loc["EU gas", ["p_nom_opt"]]
-EU_oil = df.loc["EU oil", ["p_nom_opt"]]
+#EU_oil = df.loc["EU oil", ["p_nom_opt"]]
 
 
-DK_t = n.generators_t.p.loc["2013","DK0 0 onwind"]
+DK_t = n.generators_t.p.loc["2013"].filter(like='solar')
 DK_s = n.generators_t.p.loc["2013","DK0 0 solar"]
 EU_g = n.generators_t.p.loc["2013","EU gas"]
-EU_o = n.generators_t.p.loc["2013","EU oil"]
+#EU_o = n.generators_t.p.loc["2013","EU oil"]
 
 #print(max(DK_t))
 #print(DK_t.sort_values(axis=0, ascending=False))
@@ -154,12 +162,12 @@ EU_o = n.generators_t.p.loc["2013","EU oil"]
 x1 = DK_t.div(DK_onwind.sum()).sort_values(axis=0, ascending=False).to_numpy()
 x2 = DK_s.div(DK_solar.sum()).sort_values(axis=0, ascending=False).to_numpy()
 x3 = EU_g.div(EU_gas.sum()).sort_values(axis=0, ascending=False).to_numpy()
-x4 = EU_o.div(EU_oil.sum()).sort_values(axis=0, ascending=False).to_numpy()
+#x4 = EU_o.div(EU_oil.sum()).sort_values(axis=0, ascending=False).to_numpy()
 
 plt.plot(x1,label='onwind')
 plt.plot(x2,label='solar')
 plt.plot(x3,label='gas')
-plt.plot(x4,label='oil')
+#plt.plot(x4,label='oil')
 plt.legend()
 plt.title('Duration curve')
 plt.xlabel('Hours',color='b')

@@ -18,37 +18,101 @@ import matplotlib.gridspec as gridspec
 # 
 # We select a country, in this case, Spain (ESP), and add one node (electricity bus) to the network.
 
-n = pypsa.Network("elec_s_37_lv1.0__Co2L0-solar+p3-dist1_2030.nc")
+n = pypsa.Network("elec_s_37_lv1.0__Co2L0.1-solar+p3-dist1_2030.nc")
 
 #Specify the path where to store the plots
 path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
 
+#%% Getting all the static data in the .nc file
+
+generators = n.generators["p_nom_opt"].filter(like='solar roof')
+stores = n.stores.groupby("carrier")["e_nom_opt"].sum()
+storage_unit = n.storage_units.groupby("carrier")["p_nom_opt"].sum()
+links = n.links.groupby("carrier")["p_nom_opt"].sum()
+
+generators.idxmin()
+print('Looking at the maximum and minimum installed capacity of solar rooftop')
+print('maximum value is at:', generators.idxmax())
+print('minimum value is at:',generators.idxmin())
+
+#%% extracting data from the network file
+
+#test = n.buses_t.p
+#test_df1 = test.filter(like='low voltage').sum(1)
+
+#analysing the flow from High voltage to low voltage
+links_t_p0 = n.links_t.p0.filter(like='distribution')
+
+#looking at the flow over p1, which is from bus 0 to bus 1
+links_t_p1 = n.links_t.p1.filter(like='distribution')
+
+#check for the two different busses p0 and p1
+test = (links_t_p0+links_t_p1).sum()
+
+#extracting the data for the first different countries
+links_t_NO = links_t_p0.filter(like='NO3')
+links_t_IT = links_t_p0.filter(like='IT0')
+links_t_AL = links_t_p0.filter(like='AL0')
+links_t_ES = links_t_p0.filter(like='ES0')
+
+
+#Finding the minimum value for the distribution grid
+print(min(links_t_p0))
 
 #%%
 
-test = n.buses_t.p
+fig, ax = plt.subplots()
 
-test_df1 = test.filter(like='low voltage').sum(1)
+#Averaging factor (daily, weekly, monthly)
+mu = 'D'
 
-test = n.links_t.p0
+#averageing over each week for Norway
+df1 = links_t_NO.resample(mu).mean()
+df1.plot(ax=ax)
+#averageing over each week for Italy
+df2 = links_t_IT.resample(mu).mean()
+df2.plot(ax=ax)
 
-test_df2 = test.filter(like='distribution')
+#averageing over each week for Spain
+# df3 = links_t_ES.resample(mu).mean()
+#df3.plot(ax=ax)
+#averageing over each week for Albania
 
-df = test_df2
-index = df[df < 0]
+df4 = links_t_AL.resample(mu).mean()
+df4.plot(ax=ax)
 
-df = df.loc["2013 01 01":"2013 12 31", ["DK0 0 electricity distribution grid"]]
-df.plot()
+ax.legend(['Distribution grid','Load','Solar Rooftop'])
+#ax.title(['Flow over distribution grid'])
+ax.set_ylabel('Flow [MW]')
+ax.set_xlabel('')
+ax.set_title('mojn')
+#%% Looking at the generation, distribution and load
 
-df1 = df.resample('W').mean()
+fig, ax = plt.subplots()        #defining the plot
 
-u = 7
-df2 = df[u+168:u+24*7].sum()/(24*7)
+#averageing over each week for Italy
+df2 = links_t_IT.resample('W').mean()/1e3
+df2.plot(ax=ax)
 
-print(df2)
+#looking at the generation from solar rooftop in Italy
+df = n.generators_t.p
+df = df.loc["2013 01 01":"2013 12 31", ["IT0 0 solar rooftop"]].resample('D').mean()/1e3
+df.plot(ax=ax)
+load = n.loads_t.p.loc["2013 01 01":"2013 12 31", ["IT0 0"]].resample('D').mean()/1e3
+load.plot(ax=ax)
+ax.legend(['Distribution grid','Load','Solar Rooftop'])
+ax.legend(['Load','Solar Rooftop','Distribution grid'],bbox_to_anchor=(0., 1.02, 1., .08), loc='upper center',
+           ncol=3, borderaxespad=0.)
+ax.set_xlabel('')
+ax.set_ylabel('Load / Generation / Flow [GW]')
+
+#Specify the path where to store the plots
+path = r'C:\Users\Mads Jorgensen\OneDrive - Aarhus Universitet\Dokumenter\3. Semester Kandidat\01_PreProject\LateX\Pictures'
+name = r'\02_Flow_dist1'
+plt.savefig(path+name,dpi=300, bbox_inches='tight')
 
 
-df1.plot()
+
 #%% Making fourier plots for the distribution grid
 
 
